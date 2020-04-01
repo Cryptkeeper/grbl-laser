@@ -1,0 +1,75 @@
+diff --git a/grbl laser copy.cps b/grbl laser.cps
+index 91d493a..6306ca4 100644
+--- a/grbl laser copy.cps	
++++ b/grbl laser.cps	
+@@ -205,6 +205,21 @@ function forceAny() {
+   feedOutput.reset();
+ }
+ 
++// Duplicated from original code within #onSection
++// Moved into function for use in #onPower and removed from #onSection
++function getPowerLevel(section) {
++    switch (section.jetMode) {
++    case JET_MODE_THROUGH:
++      return properties.throughPower;
++    case JET_MODE_ETCHING:
++      return properties.etchPower;
++    case JET_MODE_VAPORIZE:
++      return properties.vaporizePower;
++    default:
++      error(localize("Unsupported cutting mode."));
++    }
++}
++
+ function onSection() {
+ 
+   writeln("");
+@@ -224,22 +239,6 @@ function onSection() {
+       error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
+       return;
+     }
+-
+-    var power = 0;
+-    switch (currentSection.jetMode) {
+-    case JET_MODE_THROUGH:
+-      power = properties.throughPower;
+-      break;
+-    case JET_MODE_ETCHING:
+-      power = properties.etchPower;
+-      break;
+-    case JET_MODE_VAPORIZE:
+-      power = properties.vaporizePower;
+-      break;
+-    default:
+-      error(localize("Unsupported cutting mode."));
+-      return;
+-    }
+   } else {
+     error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
+     return;
+@@ -272,7 +271,9 @@ function onSection() {
+     setRotation(remaining);
+   }
+   
+-  writeBlock(gMotionModal.format(0), sOutput.format(power), mFormat.format(getPowerMode(currentSection)));
++  // Only write G0 instruction, let #onPower call #writeBlock for spindle ON/OFF commands
++  // writeBlock(gMotionModal.format(0), sOutput.format(power), mFormat.format(getPowerMode(currentSection)));
++  writeBlock(gMotionModal.format(0));
+ 
+   var initialPosition = getFramePosition(currentSection.getInitialPosition());
+   writeBlock(gMotionModal.format(0), xOutput.format(initialPosition.x), yOutput.format(initialPosition.y));
+@@ -293,6 +294,14 @@ function onRadiusCompensation() {
+ }
+ 
+ function onPower(power) {
++	if (power) {
++		// Behavior copied from default output instruction in #onSection
++		var powerLevel = getPowerLevel(currentSection);
++		var powerMode = getPowerMode(currentSection);
++		writeBlock(sOutput.format(powerLevel), mFormat.format(powerMode));
++	} else {
++		writeBlock(sOutput.format(0));
++	}
+ }
+ 
+ function onRapid(_x, _y, _z) {
