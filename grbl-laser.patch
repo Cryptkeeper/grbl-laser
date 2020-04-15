@@ -1,5 +1,5 @@
 diff --git a/grbl laser copy.cps b/grbl laser.cps
-index 91d493a..dc202ee 100644
+index 91d493a..db5381d 100644
 --- a/grbl laser copy.cps	
 +++ b/grbl laser.cps	
 @@ -40,9 +40,10 @@ properties = {
@@ -92,7 +92,7 @@ index 91d493a..dc202ee 100644
 +
 +		// Scale powerLevel against maxPowerLevel
 +		// Round to avoid decimals and clamp to prevent over/under values
-+		powerLevel = clamp(0, Math.round(powerLevel), properties.maxPowerLevel);
++		powerLevel = clamp(0, Math.round(powerLevel * properties.maxPowerLevel), properties.maxPowerLevel);
 +
 +		var powerMode = getPowerMode(currentSection);
 +
