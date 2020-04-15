@@ -1,30 +1,30 @@
 diff --git a/grbl laser copy.cps b/grbl laser.cps
-index 91d493a..3a64c60 100644
+index 91d493a..dc202ee 100644
 --- a/grbl laser copy.cps	
 +++ b/grbl laser.cps	
-@@ -205,6 +205,21 @@ function forceAny() {
-   feedOutput.reset();
- }
+@@ -40,9 +40,10 @@ properties = {
+   sequenceNumberStart: 10, // first sequence number
+   sequenceNumberIncrement: 1, // increment for sequence numbers
+   separateWordsWithSpace: true, // specifies that the words should be separated with a white space
+-  throughPower: 255, // set the Laser Power for though cutting
+-  etchPower: 50, // set the power for etching
+-  vaporizePower: 255 // set the power for vaporize
++  maxPowerLevel: 1000, // maximum power level to scale power vars against
++  throughPower: 1, // set the Laser Power for though cutting
++  etchPower: 0.25, // set the power for etching
++  vaporizePower: 1 // set the power for vaporize
+ };
  
-+// Duplicated from original code within #onSection
-+// Moved into function for use in #onPower and removed from #onSection
-+function getPowerLevel(section) {
-+    switch (section.jetMode) {
-+    case JET_MODE_THROUGH:
-+      return properties.throughPower;
-+    case JET_MODE_ETCHING:
-+      return properties.etchPower;
-+    case JET_MODE_VAPORIZE:
-+      return properties.vaporizePower;
-+    default:
-+      error(localize("Unsupported cutting mode."));
-+    }
-+}
-+
- function onSection() {
- 
-   writeln("");
-@@ -224,22 +239,6 @@ function onSection() {
+ // user-defined property definitions
+@@ -52,6 +53,7 @@ propertyDefinitions = {
+   sequenceNumberStart: {title:"Start sequence number", description:"The number at which to start the sequence numbers.", group:1, type:"integer"},
+   sequenceNumberIncrement: {title:"Sequence number increment", description:"The amount by which the sequence number is incremented by in each block.", group:1, type:"integer"},
+   separateWordsWithSpace: {title:"Separate words with space", description:"Adds spaces between words if 'yes' is selected.", type:"boolean"},
++  maxPowerLevel: {title: "Max power level", description: "Max laser power used to scale power levels (corresponds to spindle RPM/$30).", type: "integer"},
+   throughPower: {title: "Through power", description: "Sets the laser power used for through cutting.", type: "number"},
+   etchPower: {title:"Etch power", description:"Sets the laser power used for etching.", type:"number"},
+   vaporizePower: {title:"Vaporize power", description:"Sets the laser power used for vaporize cutting.", type:"number"}
+@@ -224,22 +226,6 @@ function onSection() {
        error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
        return;
      }
@@ -47,7 +47,7 @@ index 91d493a..3a64c60 100644
    } else {
      error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
      return;
-@@ -272,7 +271,9 @@ function onSection() {
+@@ -272,7 +258,9 @@ function onSection() {
      setRotation(remaining);
    }
    
@@ -58,7 +58,7 @@ index 91d493a..3a64c60 100644
  
    var initialPosition = getFramePosition(currentSection.getInitialPosition());
    writeBlock(gMotionModal.format(0), xOutput.format(initialPosition.x), yOutput.format(initialPosition.y));
-@@ -292,7 +293,21 @@ function onRadiusCompensation() {
+@@ -292,7 +280,44 @@ function onRadiusCompensation() {
    pendingRadiusCompensation = radiusCompensation;
  }
  
@@ -69,10 +69,33 @@ index 91d493a..3a64c60 100644
 +		return;
 +	}
 +	lastPower = power;
++
 +	if (power) {
-+		// Behavior copied from default output instruction in #onSection
-+		var powerLevel = getPowerLevel(currentSection);
++		// Duplicated from original code within #onSection
++		// Moved into function for use in #onPower and removed from #onSection
++		var powerLevel;
++
++		switch (currentSection.jetMode) {
++		case JET_MODE_THROUGH:
++			powerLevel = properties.throughPower;
++			break;
++		case JET_MODE_ETCHING:
++			powerLevel = properties.etchPower;
++			break;
++		case JET_MODE_VAPORIZE:
++			powerLevel = properties.vaporizePower;
++			break;
++		default:
++			error(localize("Unsupported cutting mode."));
++			return;
++		}
++
++		// Scale powerLevel against maxPowerLevel
++		// Round to avoid decimals and clamp to prevent over/under values
++		powerLevel = clamp(0, Math.round(powerLevel), properties.maxPowerLevel);
++
 +		var powerMode = getPowerMode(currentSection);
++
 +		writeBlock(sOutput.format(powerLevel), mFormat.format(powerMode));
 +	} else {
 +		writeBlock(sOutput.format(0));
