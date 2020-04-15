@@ -1,5 +1,5 @@
 diff --git a/grbl laser copy.cps b/grbl laser.cps
-index 91d493a..6306ca4 100644
+index 91d493a..3a64c60 100644
 --- a/grbl laser copy.cps	
 +++ b/grbl laser.cps	
 @@ -205,6 +205,21 @@ function forceAny() {
@@ -58,10 +58,17 @@ index 91d493a..6306ca4 100644
  
    var initialPosition = getFramePosition(currentSection.getInitialPosition());
    writeBlock(gMotionModal.format(0), xOutput.format(initialPosition.x), yOutput.format(initialPosition.y));
-@@ -293,6 +294,14 @@ function onRadiusCompensation() {
+@@ -292,7 +293,21 @@ function onRadiusCompensation() {
+   pendingRadiusCompensation = radiusCompensation;
  }
  
++var lastPower = false;
++
  function onPower(power) {
++	if (power === lastPower) {
++		return;
++	}
++	lastPower = power;
 +	if (power) {
 +		// Behavior copied from default output instruction in #onSection
 +		var powerLevel = getPowerLevel(currentSection);
