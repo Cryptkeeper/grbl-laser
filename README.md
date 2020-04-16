@@ -4,6 +4,7 @@ Quality of life patches to Autodesk's Fusion 360 [Grbl Laser](https://cam.autode
 ## Changes
 - Implements the `onPower` function, ensuring the laser cutter is turned on and off between moves instead of remaining always on and creating burn streaks.
 - `throughPower`, `etchPower` and `vaporizePower` properties are now multipliers of the newly added `maxPowerLevel` property. This reduces the usage of firmware dependent [magic numbers](https://en.wikipedia.org/wiki/Magic_number_(programming)) and simplifies scale adjustments.
+- Adds `throughPassCount` which enables duplicating through cutting operations (with optional comment header).
 
 ## Usage
 - Ensure you have [Git installed](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).

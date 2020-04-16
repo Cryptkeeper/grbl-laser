@@ -1,8 +1,8 @@
 diff --git a/grbl laser copy.cps b/grbl laser.cps
-index 91d493a..db5381d 100644
+index 91d493a..8924838 100644
 --- a/grbl laser copy.cps	
 +++ b/grbl laser.cps	
-@@ -40,9 +40,10 @@ properties = {
+@@ -40,9 +40,12 @@ properties = {
    sequenceNumberStart: 10, // first sequence number
    sequenceNumberIncrement: 1, // increment for sequence numbers
    separateWordsWithSpace: true, // specifies that the words should be separated with a white space
@@ -12,19 +12,52 @@ index 91d493a..db5381d 100644
 +  maxPowerLevel: 1000, // maximum power level to scale power vars against
 +  throughPower: 1, // set the Laser Power for though cutting
 +  etchPower: 0.25, // set the power for etching
-+  vaporizePower: 1 // set the power for vaporize
++  vaporizePower: 1, // set the power for vaporize
++  throughPassCount: 1,
++  writeThroughPassCountComment: true
  };
  
  // user-defined property definitions
-@@ -52,6 +53,7 @@ propertyDefinitions = {
+@@ -52,9 +55,12 @@ propertyDefinitions = {
    sequenceNumberStart: {title:"Start sequence number", description:"The number at which to start the sequence numbers.", group:1, type:"integer"},
    sequenceNumberIncrement: {title:"Sequence number increment", description:"The amount by which the sequence number is incremented by in each block.", group:1, type:"integer"},
    separateWordsWithSpace: {title:"Separate words with space", description:"Adds spaces between words if 'yes' is selected.", type:"boolean"},
 +  maxPowerLevel: {title: "Max power level", description: "Max laser power used to scale power levels (corresponds to spindle RPM/$30).", type: "integer"},
    throughPower: {title: "Through power", description: "Sets the laser power used for through cutting.", type: "number"},
    etchPower: {title:"Etch power", description:"Sets the laser power used for etching.", type:"number"},
-   vaporizePower: {title:"Vaporize power", description:"Sets the laser power used for vaporize cutting.", type:"number"}
-@@ -224,22 +226,6 @@ function onSection() {
+-  vaporizePower: {title:"Vaporize power", description:"Sets the laser power used for vaporize cutting.", type:"number"}
++  vaporizePower: {title:"Vaporize power", description:"Sets the laser power used for vaporize cutting.", type:"number"},
++  throughPassCount: {title: "Through pass count", description: "Pass count for through cutting operations.", type: "integer"},
++  writeThroughPassCountComment: {title: "Write through pass count comment", description:"Sets whether to write comments for through pass section duplications.", type: "boolean"}
+ };
+ 
+ var gFormat = createFormat({prefix:"G", decimals:0});
+@@ -88,10 +94,16 @@ var WARNING_WORK_OFFSET = 0;
+ var sequenceNumber;
+ var currentWorkOffset;
+ 
++var isWritingSection = false;
++var currentSectionBuffer = [];
++
+ /**
+   Writes the specified block.
+ */
+ function writeBlock() {
++  if (isWritingSection) {
++    currentSectionBuffer.push(arguments);
++  }
+   if (properties.showSequenceNumbers) {
+     writeWords2("N" + sequenceNumber, arguments);
+     sequenceNumber += properties.sequenceNumberIncrement;
+@@ -206,6 +218,7 @@ function forceAny() {
+ }
+ 
+ function onSection() {
++  isWritingSection = true;
+ 
+   writeln("");
+   
+@@ -224,22 +237,6 @@ function onSection() {
        error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
        return;
      }
@@ -47,7 +80,7 @@ index 91d493a..db5381d 100644
    } else {
      error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
      return;
-@@ -272,7 +258,9 @@ function onSection() {
+@@ -272,7 +269,9 @@ function onSection() {
      setRotation(remaining);
    }
    
@@ -58,7 +91,7 @@ index 91d493a..db5381d 100644
  
    var initialPosition = getFramePosition(currentSection.getInitialPosition());
    writeBlock(gMotionModal.format(0), xOutput.format(initialPosition.x), yOutput.format(initialPosition.y));
-@@ -292,7 +280,44 @@ function onRadiusCompensation() {
+@@ -292,7 +291,44 @@ function onRadiusCompensation() {
    pendingRadiusCompensation = radiusCompensation;
  }
  
@@ -103,3 +136,31 @@ index 91d493a..db5381d 100644
  }
  
  function onRapid(_x, _y, _z) {
+@@ -430,6 +466,27 @@ function onCommand(command) {
+ 
+ function onSectionEnd() {
+   forceAny();
++
++  if (isWritingSection) {
++    isWritingSection = false;
++
++    // Repush the currentSectionBuffer into #writeBlocks
++    if (currentSectionBuffer.length > 0) {
++      for (var pass = 0; pass < properties.throughPassCount - 1; pass++) {
++        writeln("");
++
++        if (properties.writeThroughPassCountComment) {
++          writeComment("throughPass Copy " + (pass + 1));
++        }
++
++        for (var block = 0; block < currentSectionBuffer.length; block++) {
++          writeBlock(currentSectionBuffer[block]);
++        }
++      }
++
++      currentSectionBuffer = [];
++    }
++  }
+ }
+ 
+ function onClose() {
