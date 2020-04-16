@@ -1,5 +1,5 @@
 diff --git a/grbl laser copy.cps b/grbl laser.cps
-index 91d493a..8924838 100644
+index 91d493a..989659d 100644
 --- a/grbl laser copy.cps	
 +++ b/grbl laser.cps	
 @@ -40,9 +40,12 @@ properties = {
@@ -32,7 +32,7 @@ index 91d493a..8924838 100644
  };
  
  var gFormat = createFormat({prefix:"G", decimals:0});
-@@ -88,10 +94,16 @@ var WARNING_WORK_OFFSET = 0;
+@@ -88,10 +94,17 @@ var WARNING_WORK_OFFSET = 0;
  var sequenceNumber;
  var currentWorkOffset;
  
@@ -46,10 +46,11 @@ index 91d493a..8924838 100644
 +  if (isWritingSection) {
 +    currentSectionBuffer.push(arguments);
 +  }
++
    if (properties.showSequenceNumbers) {
      writeWords2("N" + sequenceNumber, arguments);
      sequenceNumber += properties.sequenceNumberIncrement;
-@@ -206,6 +218,7 @@ function forceAny() {
+@@ -206,6 +219,7 @@ function forceAny() {
  }
  
  function onSection() {
@@ -57,7 +58,7 @@ index 91d493a..8924838 100644
  
    writeln("");
    
-@@ -224,22 +237,6 @@ function onSection() {
+@@ -224,22 +238,6 @@ function onSection() {
        error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
        return;
      }
@@ -80,7 +81,7 @@ index 91d493a..8924838 100644
    } else {
      error(localize("The CNC does not support the required tool/process. Only laser cutting is supported."));
      return;
-@@ -272,7 +269,9 @@ function onSection() {
+@@ -272,7 +270,9 @@ function onSection() {
      setRotation(remaining);
    }
    
@@ -91,52 +92,52 @@ index 91d493a..8924838 100644
  
    var initialPosition = getFramePosition(currentSection.getInitialPosition());
    writeBlock(gMotionModal.format(0), xOutput.format(initialPosition.x), yOutput.format(initialPosition.y));
-@@ -292,7 +291,44 @@ function onRadiusCompensation() {
+@@ -292,7 +292,44 @@ function onRadiusCompensation() {
    pendingRadiusCompensation = radiusCompensation;
  }
  
 +var lastPower = false;
 +
  function onPower(power) {
-+	if (power === lastPower) {
-+		return;
-+	}
-+	lastPower = power;
++  if (power === lastPower) {
++    return;
++  }
++  lastPower = power;
 +
-+	if (power) {
-+		// Duplicated from original code within #onSection
-+		// Moved into function for use in #onPower and removed from #onSection
-+		var powerLevel;
++  if (power) {
++    // Duplicated from original code within #onSection
++    // Moved into function for use in #onPower and removed from #onSection
++    var powerLevel;
 +
-+		switch (currentSection.jetMode) {
-+		case JET_MODE_THROUGH:
-+			powerLevel = properties.throughPower;
-+			break;
-+		case JET_MODE_ETCHING:
-+			powerLevel = properties.etchPower;
-+			break;
-+		case JET_MODE_VAPORIZE:
-+			powerLevel = properties.vaporizePower;
-+			break;
-+		default:
-+			error(localize("Unsupported cutting mode."));
-+			return;
-+		}
++    switch (currentSection.jetMode) {
++    case JET_MODE_THROUGH:
++      powerLevel = properties.throughPower;
++      break;
++    case JET_MODE_ETCHING:
++      powerLevel = properties.etchPower;
++      break;
++    case JET_MODE_VAPORIZE:
++      powerLevel = properties.vaporizePower;
++      break;
++    default:
++      error(localize("Unsupported cutting mode."));
++      return;
++    }
 +
-+		// Scale powerLevel against maxPowerLevel
-+		// Round to avoid decimals and clamp to prevent over/under values
-+		powerLevel = clamp(0, Math.round(powerLevel * properties.maxPowerLevel), properties.maxPowerLevel);
++    // Scale powerLevel against maxPowerLevel
++    // Round to avoid decimals and clamp to prevent over/under values
++    powerLevel = clamp(0, Math.round(powerLevel * properties.maxPowerLevel), properties.maxPowerLevel);
 +
-+		var powerMode = getPowerMode(currentSection);
++    var powerMode = getPowerMode(currentSection);
 +
-+		writeBlock(sOutput.format(powerLevel), mFormat.format(powerMode));
-+	} else {
-+		writeBlock(sOutput.format(0));
-+	}
++    writeBlock(sOutput.format(powerLevel), mFormat.format(powerMode));
++  } else {
++    writeBlock(sOutput.format(0));
++  }
  }
  
  function onRapid(_x, _y, _z) {
-@@ -430,6 +466,27 @@ function onCommand(command) {
+@@ -430,6 +467,27 @@ function onCommand(command) {
  
  function onSectionEnd() {
    forceAny();
@@ -144,7 +145,7 @@ index 91d493a..8924838 100644
 +  if (isWritingSection) {
 +    isWritingSection = false;
 +
-+    // Repush the currentSectionBuffer into #writeBlocks
++    // Repush the currentSectionBuffer into #writeBlock
 +    if (currentSectionBuffer.length > 0) {
 +      for (var pass = 0; pass < properties.throughPassCount - 1; pass++) {
 +        writeln("");
