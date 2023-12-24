@@ -1,3 +1,6 @@
+# Unmaintained Project
+An updated fork of this patch is available via [JanUlrich/grbl-laser](https://github.com/JanUlrich/grbl-laser).
+
 # grbl-laser
 Quality of life patches to Autodesk's Fusion 360 [Grbl Laser](https://cam.autodesk.com/hsmposts?p=grbl_laser) post processor. Designed for use with the [SainSmart Genmitsu CNC Router 3018-PRO](https://www.sainsmart.com/collections/genmitsu-cnc/products/sainsmart-genmitsu-cnc-router-3018-pro-diy-kit) machine and firmware on [Grbl](https://github.com/gnea/grbl/wiki) version 1.1 (with no 1.1 exclusive features used).
 
